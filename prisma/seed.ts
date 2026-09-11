@@ -8,29 +8,7 @@ import {
   ContactRequestStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
-function createPrismaClient(): PrismaClient {
-  const url = process.env.DATABASE_URL;
-  if (url && url.includes("pooler.supabase.com")) {
-    try {
-      const parsed = new URL(url);
-      const match = parsed.username.match(/^postgres\.([a-zA-Z0-9]+)$/);
-      if (match) {
-        parsed.hostname = `db.${match[1]}.supabase.co`;
-        parsed.username = "postgres";
-        return new PrismaClient({
-          datasources: {
-            db: { url: parsed.toString() },
-          },
-        });
-      }
-    } catch {
-      // Fallback
-    }
-  }
-  return new PrismaClient();
-}
-
-const prisma = createPrismaClient();
+const prisma = new PrismaClient();
 
 const DEMO_EMAILS = [
   "admin@findback.test",
