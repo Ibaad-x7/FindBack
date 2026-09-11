@@ -1,0 +1,188 @@
+// FindBack - Smart Lost and Found Platform
+// Prisma schema
+//
+// STEP 2: Database schema (User, Item, Match, ContactRequest, Notification).
+// Authentication, matching logic, and API routes that use these models are
+// implemented in later steps — this file only defines the data layer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ItemType {
+  LOST
+  FOUND
+}
+
+enum ItemCategory {
+  ELECTRONICS
+  DOCUMENTS
+  WALLET
+  KEYS
+  BAGS
+  CLOTHING
+  JEWELRY
+  BOOKS
+  ACCESSORIES
+  OTHER
+}
+
+enum ItemStatus {
+  ACTIVE
+  MATCHED
+  RECOVERED
+  CLOSED
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ContactRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// -----------------------------------------------------------------------
+// Models
+// -----------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  profileImage String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Items this user has reported as lost or found
+  items Item[]
+
+  // Contact requests this user has sent to other users about an item
+  sentContactRequests ContactRequest[] @relation("ContactRequestSender")
+
+  // Contact requests other users have sent to this user
+  receivedContactRequests ContactRequest[] @relation("ContactRequestReceiver")
+
+  // In-app notifications for this user
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Item {
+  id                         String       @id @default(cuid())
+  userId                     String
+  type                       ItemType
+  name                       String
+  category                   ItemCategory
+  description                String
+  imageUrl                   String?
+  location                   String
+  city                       String
+  date                       DateTime
+  additionalDetails          String?
+  identifyingCharacteristics String?
+  status                     ItemStatus   @default(ACTIVE)
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+
+  // The user who reported this item
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Matches where this item is the LOST side
+  matchesAsLostItem Match[] @relation("MatchLostItem")
+
+  // Matches where this item is the FOUND side
+  matchesAsFoundItem Match[] @relation("MatchFoundItem")
+
+  // Contact requests made about this item
+  contactRequests ContactRequest[]
+
+  // Single-column indexes for the common search/filter fields
+  @@index([type])
+  @@index([category])
+  @@index([city])
+  @@index([date])
+  @@index([status])
+  // Composite index for the common combined search: e.g. "LOST items,
+  // ELECTRONICS category, in this city, still ACTIVE"
+  @@index([type, category, city, status])
+  @@map("items")
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  lostItemId  String
+  foundItemId String
+  score       Float
+  status      MatchStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  lostItem  Item @relation("MatchLostItem", fields: [lostItemId], references: [id], onDelete: Cascade)
+  foundItem Item @relation("MatchFoundItem", fields: [foundItemId], references: [id], onDelete: Cascade)
+
+  // Prevent the same lost/found pair from being matched more than once
+  @@unique([lostItemId, foundItemId])
+  @@index([status])
+  @@index([lostItemId])
+  @@index([foundItemId])
+  @@map("matches")
+}
+
+model ContactRequest {
+  id         String               @id @default(cuid())
+  senderId   String
+  receiverId String
+  itemId     String
+  message    String
+  status     ContactRequestStatus @default(PENDING)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  sender   User @relation("ContactRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ContactRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  item     Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([itemId])
+  @@index([status])
+  @@map("contact_requests")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}

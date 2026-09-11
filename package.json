@@ -1,0 +1,33 @@
+{
+  "name": "findback",
+  "private": true,
+  "version": "1.0.0",
+  "description": "FindBack - Smart Lost and Found Platform (monorepo root)",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "ts-node --transpile-only prisma/seed.ts"
+  },
+  "scripts": {
+    "install:all": "npm install",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "typecheck:backend": "npm run typecheck --workspace=backend",
+    "typecheck:frontend": "npm run typecheck --workspace=frontend",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "db:seed": "prisma db seed"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0"
+  }
+}

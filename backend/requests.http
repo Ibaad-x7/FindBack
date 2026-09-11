@@ -1,0 +1,283 @@
+### FindBack API — manual requests
+### Works with the VS Code "REST Client" extension or JetBrains' built-in
+### HTTP client. Run requests top to bottom; @token is filled in
+### automatically from the login response if your client supports it.
+
+@baseUrl = http://localhost:5000
+
+### Register a new user
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Get current user (paste the token from the login response above)
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Expect 401: no token
+GET {{baseUrl}}/api/auth/me
+
+### Expect 401: wrong password
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "wrongpassword"
+}
+
+### Expect 409: duplicate email
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+
+### ============================================================
+### Items API — replace PASTE_TOKEN_HERE and PASTE_ITEM_ID_HERE
+### ============================================================
+
+### Create a LOST item
+POST {{baseUrl}}/api/items
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "type": "LOST",
+  "name": "Black Wallet",
+  "category": "WALLET",
+  "description": "Black leather wallet with three cards inside",
+  "location": "College Library",
+  "city": "Chennai",
+  "date": "2026-09-05",
+  "additionalDetails": "Small black leather wallet",
+  "identifyingCharacteristics": "Scratch on the front"
+}
+
+### List all active items
+GET {{baseUrl}}/api/items
+
+### List with filters + pagination
+GET {{baseUrl}}/api/items?type=LOST&category=WALLET&city=Chennai&page=1&limit=10
+
+### Search
+GET {{baseUrl}}/api/items?search=black wallet
+
+### Get a single item
+GET {{baseUrl}}/api/items/PASTE_ITEM_ID_HERE
+
+### Get my items
+GET {{baseUrl}}/api/items/my
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get my items, filtered
+GET {{baseUrl}}/api/items/my?type=LOST&status=ACTIVE
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Update an item (owner or admin only)
+PUT {{baseUrl}}/api/items/PASTE_ITEM_ID_HERE
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "description": "Updated description",
+  "city": "Chennai"
+}
+
+### Mark an item's status (owner or admin only)
+PATCH {{baseUrl}}/api/items/PASTE_ITEM_ID_HERE/status
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "status": "RECOVERED"
+}
+
+### Delete an item (owner or admin only)
+DELETE {{baseUrl}}/api/items/PASTE_ITEM_ID_HERE
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Expect 401: update without a token
+PUT {{baseUrl}}/api/items/PASTE_ITEM_ID_HERE
+Content-Type: application/json
+
+{
+  "description": "should not work"
+}
+
+
+### ============================================================
+### Matches API — replace PASTE_TOKEN_HERE and PASTE_MATCH_ID_HERE
+### ============================================================
+
+### Run the matching engine (any authenticated user)
+POST {{baseUrl}}/api/matches/run
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get my matches (lost or found items I own)
+GET {{baseUrl}}/api/matches
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get one match (must own the lost or found item involved, or be ADMIN)
+GET {{baseUrl}}/api/matches/PASTE_MATCH_ID_HERE
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Accept a match
+PATCH {{baseUrl}}/api/matches/PASTE_MATCH_ID_HERE/status
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "status": "ACCEPTED"
+}
+
+### Reject a match
+PATCH {{baseUrl}}/api/matches/PASTE_MATCH_ID_HERE/status
+Content-Type: application/json
+Authorization: Bearer PASTE_TOKEN_HERE
+
+{
+  "status": "REJECTED"
+}
+
+### Expect 401: run matching without a token
+POST {{baseUrl}}/api/matches/run
+
+### Expect 403/404: fetch a match you're not involved in / that doesn't exist
+GET {{baseUrl}}/api/matches/not-a-real-id
+Authorization: Bearer PASTE_TOKEN_HERE
+
+
+### ============================================================
+### Image Upload API — replace PASTE_TOKEN_HERE
+### ============================================================
+
+### Upload an item image (multipart/form-data)
+POST {{baseUrl}}/api/upload/image
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="photo.jpg"
+Content-Type: image/jpeg
+
+< ./test-photo.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+
+### ============================================================
+### Contact Requests API — replace PASTE_TOKEN_HERE and IDs
+### ============================================================
+
+### Send a contact request to an item reporter
+POST {{baseUrl}}/api/contact-requests
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "itemId": "PASTE_ITEM_ID_HERE",
+  "message": "Hi, I think this item belongs to me! Can we verify details?"
+}
+
+### Get received contact requests (for items I reported)
+GET {{baseUrl}}/api/contact-requests/received
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get sent contact requests (requests I initiated)
+GET {{baseUrl}}/api/contact-requests/sent
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Accept a contact request (reveals mutual contact info)
+PATCH {{baseUrl}}/api/contact-requests/PASTE_REQUEST_ID_HERE/status
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "status": "ACCEPTED"
+}
+
+### Decline/reject a contact request
+PATCH {{baseUrl}}/api/contact-requests/PASTE_REQUEST_ID_HERE/status
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "status": "REJECTED"
+}
+
+
+### ============================================================
+### Notifications API — replace PASTE_TOKEN_HERE and IDs
+### ============================================================
+
+### Get all notifications for current user
+GET {{baseUrl}}/api/notifications
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Get unread notifications count (used by Navbar bell badge)
+GET {{baseUrl}}/api/notifications/unread-count
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Mark a specific notification as read
+PATCH {{baseUrl}}/api/notifications/PASTE_NOTIFICATION_ID_HERE/read
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Mark all notifications as read
+PATCH {{baseUrl}}/api/notifications/read-all
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### Delete a notification
+DELETE {{baseUrl}}/api/notifications/PASTE_NOTIFICATION_ID_HERE
+Authorization: Bearer PASTE_TOKEN_HERE
+
+
+### ============================================================
+### Admin API — Requires ADMIN role (use admin token)
+### ============================================================
+
+### Get platform-wide statistics (KPI cards)
+GET {{baseUrl}}/api/admin/stats
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+
+### List registered users (supports ?page=1&limit=10&search=alice&role=USER)
+GET {{baseUrl}}/api/admin/users?page=1&limit=10
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+
+### Change user role (promote to ADMIN or demote to USER)
+PATCH {{baseUrl}}/api/admin/users/PASTE_USER_ID_HERE/role
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### Delete a user account (with cascading cleanup of items and images)
+DELETE {{baseUrl}}/api/admin/users/PASTE_USER_ID_HERE
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+
+### List all platform items for moderation (supports filters: type, status, category, search)
+GET {{baseUrl}}/api/admin/items?page=1&limit=10
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+
+
+
